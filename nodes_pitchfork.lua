@@ -42,25 +42,35 @@ minetest.register_tool("cottages:pitchfork", {
 		if( placer == nil or pointed_thing == nil or pointed_thing.type ~= "node") then
 			return nil
 		end
-		local pos  = minetest.get_pointed_thing_position( pointed_thing, 1 )
-		local node = minetest.get_node_or_nil( pos )
-		if( node == nil or not(node.name) or node.name ~= "air") then
-			return nil
+		local below_pos  = minetest.get_pointed_thing_position( pointed_thing )
+		local below_node = minetest.get_node_or_nil( below_pos )
+		local below_conf = minetest.registered_nodes[below_node.name]
+
+		local pos = below_pos
+		if not below_conf.buildable_to then
+			pos = minetest.get_pointed_thing_position( pointed_thing, 1 )
+			local node = minetest.get_node_or_nil( pos )
+			if( node == nil or not(node.name) or node.name ~= "air") then
+				return nil
+			end
 		end
 		if minetest.is_protected(pos, placer:get_player_name()) then
 			return nil
 		end
 		minetest.rotate_and_place(ItemStack("cottages:pitchfork_placed"), placer, pointed_thing)
 		-- did the placing succeed?
-		local nnode = minetest.get_node(pos)
-		if( not(nnode) or not(nnode.name) or nnode.name ~= "cottages:pitchfork_placed") then
+		local new_node = minetest.get_node(pos)
+		if( not(new_node) or not(new_node.name) or new_node.name ~= "cottages:pitchfork_placed") then
 			return nil
 		end
 		local meta = minetest.get_meta(pos)
 		meta:set_int( "wear", itemstack:get_wear())
 		meta:set_string("infotext", S("pitchfork (for hay and straw)"))
 		-- the tool has been placed; consume it
-		return ItemStack("")
+		if not minetest.settings:get_bool("creative_mode") then
+			itemstack:take_item()
+		end
+		return itemstack
 	end,
 })
 
